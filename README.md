@@ -9,9 +9,11 @@ You can break up your webpack configs into small modular configs that are easier
 
 It also allows you to have optional settings that can be passed in to each config, allowing you to update the configs independently of the settings.
 
+The other key feature is that because the configs are completely modularized, you can add or remove them easily, without fear of it affecting the rest of your webpack config.
+
 ## get-webpack-config example
 
-Here's an example of how you might use `get-webpack-config`, this is a complete webpack config file for a development server:
+Here's an example of how you might use `get-webpack-config`, this is a complete webpack config file for a real-world `webpack.dev.js` config:
 
 ```js
 // webpack.dev.js
@@ -209,3 +211,67 @@ The following environment variables allow you to override defaults in `get-webpa
 - `GET_WEBPACK_CONFIG_SETTINGS_PATH` - The fully qualified path to the directory where the webpack configs are. Default: `./webpack-configs`
 
 - `GET_WEBPACK_CONFIG_CONFIGS_PATH` - The fully qualified path to the directory where the webpack settings are. Default: `./webpack-settings`
+
+## webpack Multi-compiler example
+
+Any webpack config file can return an object, which is a single webpack compiler. Or it can return an array of webpack objects, which is called a [multi-compiler](https://webpack.js.org/api/node/#multicompiler).
+
+We leverage this to break up our builds into separate configs for `modern`, `legacy`, and `build` webpack compiles.
+
+Here's an example of a complete real-world `webpack.prod.js` config file that uses the `get-webpack-config` functions for a nice clean, semantically readable config:
+
+```js
+// webpack.prod.js
+// production build config
+
+// environment
+process.env.NODE_ENV = process.env.NODE_ENV || 'production';
+
+// webpack config file helpers
+const { buildWebpackConfigs, legacyWebpackConfigs, modernWebpackConfigs } = require('get-webpack-config');
+
+// production multi-compiler module exports
+module.exports = [
+    legacyWebpackConfigs(
+        'app',
+        'production',
+        'critical',
+        'manifest',
+        'babel-loader',
+        'image-loader',
+        'font-loader',
+        'postcss-loader',
+        'typescript-loader',
+        'vue-loader',
+        'banner',
+        'compression',
+        'bundle-analyzer',
+    ),
+    modernWebpackConfigs(
+        'app',
+        'production',
+        'manifest',
+        'babel-loader',
+        'image-loader',
+        'imagemin-webp',
+        'font-loader',
+        'postcss-loader',
+        'typescript-loader',
+        'vue-loader',
+        'banner',
+        'compression',
+        'bundle-analyzer',
+        'workbox',
+    ),
+    buildWebpackConfigs(
+        'build',
+        'clean',
+        'copy',
+        'favicons',
+        'create-symlink',
+        'save-remote-file',
+    ),
+];
+```
+
+You may have simpler needs than this, but it's easy to just remove the bits you don't need by just deleting a single line.
